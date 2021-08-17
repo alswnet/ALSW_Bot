@@ -1,4 +1,6 @@
 import socket
+import re
+
 from collections import namedtuple
 
 from MiLibrerias import EnviarMensajeMQTT
@@ -7,6 +9,7 @@ from MiLibrerias import ConfigurarLogging
 
 logger = ConfigurarLogging(__name__)
 
+ExprecionColores = '\#[a-fA-f0-9][a-fA-f0-9][a-fA-f0-9][a-fA-f0-9][a-fA-f0-9][a-fA-f0-9]'
 
 Mensaje = namedtuple(
     'Message',
@@ -102,6 +105,16 @@ class twithbot:
         for mensaje in MensajeColor:
             if mensaje in self.colores:
                 return mensaje
+            Color = self.Es_color_exa(mensaje)
+            if Color is not None:
+                return Color
+        
+        return None
+
+    def Es_color_exa(self, Mensaje):
+        Color = re.findall(ExprecionColores, Mensaje)
+        if len(Color) > 0:
+            return Color[0]
         return None
 
     def FiltranChat(Mensaje, Palabra):
