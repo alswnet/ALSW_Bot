@@ -1,30 +1,45 @@
-#!/usr/bin/env python
 
 import socket
 from collections import namedtuple
 
-import config
+from MiLibrerias import ConfigurarLogging
+
+logger = ConfigurarLogging(__name__)
 
 
-COMANDOS_BASAS = {
-    '!discord': 'Unete {mensaje.user} a nuestro discord https://nocheprogramacion.com/discord',
-    '!youtube': 'Subcribete a Canal de Youtube https://youtube.com/alswnet?sub_confirmation=1, {mensaje.user}'
-}
+from MiLibrerias import ObtenerValor
+from MiLibrerias import EnviarMensajeMQTT
+
+colores = ["rojo", "azul", "verde", "blanco", "gris",
+           "aqua", "amarillo", "naranja", "morado", "rosado"]
 
 Mensaje = namedtuple(
     'Message',
     'prefix user channel irc_command irc_args text text_command text_args',
 )
 
-class Bot:
-    def __init__(self) -> None:
+COMANDOS_BASAS = {
+    '!discord': 'Unete {mensaje.user} a nuestro discord https://nocheprogramacion.com/discord',
+    '!youtube': 'Subcribete a Canal de Youtube https://youtube.com/alswnet?sub_confirmation=1, {mensaje.user}'
+}
+
+
+
+def holabot(mensaje):
+    print(f"el {mensaje}")
+
+class twithbot:
+    
+    def __init__(self):
+        logger.info("Creando Bot de Twitch")
         self.irc_server = 'irc.twitch.tv'
         self.irc_port = 6667
-        self.oauth_token = config.OAUTH_TOKEN
-        self.usuario = 'alswbot'
-        self.canales = ['alswbot', 'alswnet']
+        self.oauth_token =  ObtenerValor("data/twitch.json", 'token')
+        self.usuario =  ObtenerValor("data/twitch.json", 'usuario')
+        self.canales = ObtenerValor("data/twitch.json", 'canales')
         self.comandos_extras = {
-            '!ping': self.responder_ping
+            '!ping': self.responder_ping,
+            '!colorlinea': self.funcion_color_linea
         }
 
     def conectar(self):
@@ -34,9 +49,9 @@ class Bot:
         self.enviar_commando(f'NICK {self.usuario}')
         for canal in self.canales:
             self.enviar_commando(f'JOIN #{canal}')
-            self.enviar_privado(canal, "hola amigos")
+            self.enviar_privado(canal, "ALSWbot Activo")
         self.loop_mensajes()
-
+    
     def enviar_privado(self, canal, texto):
         self.enviar_commando(f'PRIVMSG #{canal} :{texto}')
 
@@ -44,7 +59,6 @@ class Bot:
         if 'PASS' not in comando:
             print(f'< {comando}')
         self.irc.send((comando + '\r\n').encode())
-
 
     def obtener_usuario_prefix(self, prefix):
         dominio = prefix.split('!')[0]
@@ -58,6 +72,34 @@ class Bot:
         text = f'hola {mensaje.user}, Pong!!'
         self.enviar_privado(mensaje.channel, text)
 
+    
+
+    def funcion_color_linea(self, mensaje):
+        # for mensaje_actual in mensaje.text_args:
+        Color = self.Es_color(mensaje.text_args)
+        if Color is None:
+            texto = f'Ese color no estas en la lista'
+        else:
+            texto = f'Es un color - {Color}'
+            logger.info(f"Cambiar a Clor {Color}")
+            EnviarMensajeMQTT("fondo/color/linea", Color)
+            # Enviar por mqtt
+
+        self.enviar_privado(mensaje.channel, texto)
+
+    def Es_color(self, MensajeColor):
+        for mensaje in MensajeColor:
+            if mensaje in colores:
+                return mensaje
+        return None
+
+    def FiltranChat(Mensaje, Palabra):
+        if Mensaje:
+            Palabra = Palabra.lower()
+            Mensaje = Mensaje.lower()
+            if Palabra in Mensaje:
+                return True
+        return False
 
     def procesar_mensaje(self, mensaje_recivido):
         partes = mensaje_recivido.split(' ')
@@ -116,6 +158,7 @@ class Bot:
         self.enviar_privado(mensaje.channel, text)
 
     def manejar_mensaje(self, mensaje_recivido):
+        # print(mensaje_recivido)
 
         if len(mensaje_recivido) == 0:
             return
@@ -125,7 +168,7 @@ class Bot:
         if mensaje.irc_command == 'PING':
             self.enviar_commando('PONG :tmi.twitch.tv')
         elif mensaje.irc_command == 'PRIVMSG':
-            print(f"Comando {mensaje.text_command}")
+            # print(f"Comando {mensaje.text_command}")
             if mensaje.text_command in COMANDOS_BASAS:
                 self.manejar_comandos_base(
                     mensaje,
@@ -142,12 +185,3 @@ class Bot:
             mensajes_nuevos = self.irc.recv(2048).decode()
             for Mensaje_nuevo in mensajes_nuevos.split('\r\n'):
                 self.manejar_mensaje(Mensaje_nuevo)
-
-
-def main():
-    bot = Bot()
-    bot.conectar()
-
-
-if __name__ == '__main__':
-    main()

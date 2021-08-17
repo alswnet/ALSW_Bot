@@ -1,1 +1,0 @@
-OAUTH_TOKEN = 'oauth:1234'
