@@ -1,17 +1,12 @@
-
 import socket
 from collections import namedtuple
 
+from MiLibrerias import EnviarMensajeMQTT
+from MiLibrerias import ObtenerValor
 from MiLibrerias import ConfigurarLogging
 
 logger = ConfigurarLogging(__name__)
 
-
-from MiLibrerias import ObtenerValor
-from MiLibrerias import EnviarMensajeMQTT
-
-colores = ["rojo", "azul", "verde", "blanco", "gris",
-           "aqua", "amarillo", "naranja", "morado", "rosado"]
 
 Mensaje = namedtuple(
     'Message',
@@ -24,23 +19,29 @@ COMANDOS_BASAS = {
 }
 
 
-
 def holabot(mensaje):
     print(f"el {mensaje}")
 
+
 class twithbot:
-    
+
     def __init__(self):
         logger.info("Creando Bot de Twitch")
         self.irc_server = 'irc.twitch.tv'
         self.irc_port = 6667
-        self.oauth_token =  ObtenerValor("data/twitch.json", 'token')
-        self.usuario =  ObtenerValor("data/twitch.json", 'usuario')
+        self.oauth_token = ObtenerValor("data/twitch.json", 'token')
+        self.usuario = ObtenerValor("data/twitch.json", 'usuario')
         self.canales = ObtenerValor("data/twitch.json", 'canales')
+        self.linkbot = ObtenerValor("data/twitch.json", 'linkbot')
+        self.colores = ObtenerValor("data/twitch.json", 'colores')
         self.comandos_extras = {
             '!ping': self.responder_ping,
-            '!colorlinea': self.funcion_color_linea
+            '!colorlinea': self.funcion_color_linea,
+            '!colorfondo': self.funcion_color_fondo,
+            '!colorbase': self.funcion_color_base,
+            "!reiniciar": self.funcion_color_reiniciar
         }
+        logger.debug(f"Colores Dispinibles {self.colores}")
 
     def conectar(self):
         self.irc = socket.socket()
@@ -51,13 +52,13 @@ class twithbot:
             self.enviar_commando(f'JOIN #{canal}')
             self.enviar_privado(canal, "ALSWbot Activo")
         self.loop_mensajes()
-    
+
     def enviar_privado(self, canal, texto):
         self.enviar_commando(f'PRIVMSG #{canal} :{texto}')
 
     def enviar_commando(self, comando):
         if 'PASS' not in comando:
-            print(f'< {comando}')
+            logger.info(f"< {comando}")
         self.irc.send((comando + '\r\n').encode())
 
     def obtener_usuario_prefix(self, prefix):
@@ -72,24 +73,34 @@ class twithbot:
         text = f'hola {mensaje.user}, Pong!!'
         self.enviar_privado(mensaje.channel, text)
 
-    
-
-    def funcion_color_linea(self, mensaje):
-        # for mensaje_actual in mensaje.text_args:
+    def funcion_color(self, topico, mensaje):
+        """Envia un color a topico por MQTT."""
         Color = self.Es_color(mensaje.text_args)
         if Color is None:
-            texto = f'Ese color no estas en la lista'
+            texto = f'Disculpa {mensaje.user} Color no disponible {self.linkbot}'
         else:
-            texto = f'Es un color - {Color}'
-            logger.info(f"Cambiar a Clor {Color}")
-            EnviarMensajeMQTT("fondo/color/linea", Color)
-            # Enviar por mqtt
+            texto = f'Cambiando[{topico}] a {Color}, gracias a {mensaje.user}'
+            EnviarMensajeMQTT(topico, Color)
 
+        self.enviar_privado(mensaje.channel, texto)
+
+    def funcion_color_linea(self, mensaje):
+        self.funcion_color("fondo/color/linea", mensaje)
+
+    def funcion_color_fondo(self, mensaje):
+        self.funcion_color("fondo/color/fondo", mensaje)
+
+    def funcion_color_base(self, mensaje):
+        self.funcion_color("fondo/color/base", mensaje)
+
+    def funcion_color_reiniciar(self, mensaje):
+        EnviarMensajeMQTT("fondo/reiniciar", 1)
+        texto = f'Reiniciando fondoOBS gracias a {mensaje.user}'
         self.enviar_privado(mensaje.channel, texto)
 
     def Es_color(self, MensajeColor):
         for mensaje in MensajeColor:
-            if mensaje in colores:
+            if mensaje in self.colores:
                 return mensaje
         return None
 
@@ -158,7 +169,6 @@ class twithbot:
         self.enviar_privado(mensaje.channel, text)
 
     def manejar_mensaje(self, mensaje_recivido):
-        # print(mensaje_recivido)
 
         if len(mensaje_recivido) == 0:
             return
@@ -166,9 +176,10 @@ class twithbot:
         mensaje = self.procesar_mensaje(mensaje_recivido)
 
         if mensaje.irc_command == 'PING':
+            logger.info("> Ping")
             self.enviar_commando('PONG :tmi.twitch.tv')
         elif mensaje.irc_command == 'PRIVMSG':
-            # print(f"Comando {mensaje.text_command}")
+            logger.info("> PRIVMSG")
             if mensaje.text_command in COMANDOS_BASAS:
                 self.manejar_comandos_base(
                     mensaje,
@@ -176,9 +187,10 @@ class twithbot:
                     COMANDOS_BASAS[mensaje.text_command]
                 )
             if mensaje.text_command in self.comandos_extras:
+                logger.info("> PRIVMSG {mensaje.text}")
                 self.comandos_extras[mensaje.text_command](mensaje)
-
-        print(f'> {mensaje}')
+        # else:
+        #     print(f'> {mensaje}')
 
     def loop_mensajes(self):
         while True:
