@@ -9,7 +9,7 @@ from MiLibrerias import ConfigurarLogging
 
 logger = ConfigurarLogging(__name__)
 
-ExprecionColores = '\#[a-fA-f0-9][a-fA-f0-9][a-fA-f0-9][a-fA-f0-9][a-fA-f0-9][a-fA-f0-9]'
+ExprecionColores = '\#(?:[0-9a-f]{3}){1,2}'
 
 Mensaje = namedtuple(
     'Message',
@@ -30,7 +30,7 @@ class twithbot:
 
     def __init__(self):
         logger.info("Creando Bot de Twitch")
-        self.irc_server = 'irc.twitch.tv'
+        self.irc_server = 'irc.chat.twitch.tv'
         self.irc_port = 6667
         self.oauth_token = ObtenerValor("data/twitch.json", 'token')
         self.usuario = ObtenerValor("data/twitch.json", 'usuario')
