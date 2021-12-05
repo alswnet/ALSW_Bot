@@ -22,6 +22,7 @@ def ChatYoutube(IdVideo, Salvar=False):
                 Mensaje.message = Mensaje.message.lower()
                 SalvarMensajes(Mensaje.IdVideo, Mensaje, Salvar)
                 FiltrarColor(Mensaje, Salvar)
+                FiltrarPreguntas(Mensaje, Salvar)
         except KeyboardInterrupt:
             logger.info("Saliendo del Chat")
             chat.terminate()
@@ -61,6 +62,15 @@ def FiltrarColor(Mensaje, Salvar):
 
     logger.info(f"Comando [{Comando}]{Color} por {Mensaje.author.name}")
     EnviarMensajeMQTT(f"/fondo/color/{Comando}", Color)
+
+
+def FiltrarPreguntas(Mensaje, Salvar):
+    if FiltranChat(Mensaje.message, "pregunta") or FiltranChat(Mensaje.message, "?"):
+        logger.info(f"Pregunta de {Mensaje.author.name} {Mensaje.message}")
+        if Salvar:
+            SalvarComando(
+                f"{Mensaje.IdVideo}_Pregunta.csv", Mensaje.datetime, Mensaje.author.name, "Pregunta", Mensaje.message
+            )
 
 
 def FiltranChat(Mensaje, Palabra):
