@@ -1,6 +1,7 @@
 # https://pypi.org/project/pytchat/
 import pytchat
 import re
+import json
 
 from MiLibrerias import ConfigurarLogging
 from MiLibrerias import EnviarMensajeMQTT
@@ -23,6 +24,8 @@ def ChatYoutube(IdVideo, Salvar=False):
                 SalvarMensajes(Mensaje.IdVideo, Mensaje, Salvar)
                 FiltrarColor(Mensaje, Salvar)
                 FiltrarPreguntas(Mensaje, Salvar)
+                if not (Mensaje.author.isChatModerator or Mensaje.author.isChatOwner):
+                    FiltrarMods(Mensaje, Salvar)
         except KeyboardInterrupt:
             logger.info("Saliendo del Chat")
             chat.terminate()
@@ -71,6 +74,25 @@ def FiltrarPreguntas(Mensaje, Salvar):
             SalvarComando(
                 f"{Mensaje.IdVideo}_Pregunta.csv", Mensaje.datetime, Mensaje.author.name, "Pregunta", Mensaje.message
             )
+
+
+def FiltrarMods(Mensaje, Salvar):
+   
+    if FiltranChat(Mensaje.message, "grabando"):
+        Comando = {
+            "nombre": "Pregunta Grabando",
+            "accion": "macro",
+            "opciones": [
+                {"accion": "notificacion", "opciones": {"texto": "Pregunta si Grabas"}},
+                {
+                    "nombre": "Sonido",
+                    "accion": "textovoz",
+                    "opciones": {"mensaje": f"{Mensaje.author.name} pregunta, si estan grabando, Gracias"},
+                },
+            ],
+        }
+        Comando = json.dumps(Comando)
+        EnviarMensajeMQTT("/alsw/evento/ryuk", Comando)
 
 
 def FiltranChat(Mensaje, Palabra):

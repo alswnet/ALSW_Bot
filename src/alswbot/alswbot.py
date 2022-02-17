@@ -1,9 +1,9 @@
 
 import argparse
-from bot.twitchbot import twithbot
-from bot.youtubebot import ChatYoutube
 
 import MiLibrerias
+from bot.twitchbot import twithbot
+from bot.youtubebot import ChatYoutube
 
 logger = MiLibrerias.ConfigurarLogging(__name__)
 
