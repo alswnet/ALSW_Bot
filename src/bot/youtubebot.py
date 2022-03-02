@@ -1,16 +1,16 @@
 # https://pypi.org/project/pytchat/
-import pytchat
-import re
 import json
+import re
 
-from MiLibrerias import ConfigurarLogging
-from MiLibrerias import EnviarMensajeMQTT
-from .funcionesbot import SalvarMensaje, SalvarDonaciones, SalvarComando
+import pytchat
+from MiLibrerias import ConfigurarLogging, EnviarMensajeMQTT, SalvarValor
+
+from .funcionesbot import SalvarComando, SalvarDonaciones, SalvarMensaje
 
 logger = ConfigurarLogging(__name__)
 
 ExprecionColores = "\#[a-fA-f0-9][a-fA-f0-9][a-fA-f0-9][a-fA-f0-9][a-fA-f0-9][a-fA-f0-9]"
-ComandosColor = ["base", "linea" "fondo"]
+ComandosColor = ["base", "linea", "fondo"]
 Colores = ["rojo", "azul", "verde", "blanco", "gris", "aqua", "amarillo", "naranja", "morado", "rosado"]
 
 
@@ -23,6 +23,7 @@ def ChatYoutube(IdVideo, Salvar=False):
                 Mensaje.message = Mensaje.message.lower()
                 SalvarMensajes(Mensaje.IdVideo, Mensaje, Salvar)
                 FiltrarColor(Mensaje, Salvar)
+                FiltrarPresente(Mensaje, Salvar)
                 FiltrarPreguntas(Mensaje, Salvar)
                 if not (Mensaje.author.isChatModerator or Mensaje.author.isChatOwner):
                     FiltrarMods(Mensaje, Salvar)
@@ -67,6 +68,25 @@ def FiltrarColor(Mensaje, Salvar):
     EnviarMensajeMQTT(f"/fondo/color/{Comando}", Color)
 
 
+def FiltrarPresente(Mensaje, salvar):
+    if not FiltranChat(Mensaje.message, "presente"):
+        return
+
+    nombre = Mensaje.author.name
+    canal = Mensaje.author.channelId
+    miembro = Mensaje.author.isChatSponsor
+
+    if miembro:
+        logger.info(f"Presente Patrocinador {nombre} - https://www.youtube.com/channel/{canal}")
+    else:
+        logger.info(f"Presente {nombre} - https://www.youtube.com/channel/{canal}")
+
+    if salvar:
+
+        SalvarValor(f"{Mensaje.IdVideo}_Presente.json", canal, nombre, False)
+        print(f"Salvando {nombre}")
+
+
 def FiltrarPreguntas(Mensaje, Salvar):
     if FiltranChat(Mensaje.message, "pregunta") or FiltranChat(Mensaje.message, "?"):
         logger.info(f"Pregunta de {Mensaje.author.name} {Mensaje.message}")
@@ -77,7 +97,7 @@ def FiltrarPreguntas(Mensaje, Salvar):
 
 
 def FiltrarMods(Mensaje, Salvar):
-   
+
     if FiltranChat(Mensaje.message, "grabando"):
         Comando = {
             "nombre": "Pregunta Grabando",
