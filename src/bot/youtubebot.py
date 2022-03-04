@@ -22,14 +22,25 @@ def ChatYoutube(IdVideo, Salvar=False):
                 Mensaje.IdVideo = IdVideo
                 Mensaje.message = Mensaje.message.lower()
                 SalvarMensajes(Mensaje.IdVideo, Mensaje, Salvar)
-                FiltrarColor(Mensaje, Salvar)
+                esColor = FiltrarColor(Mensaje, Salvar)
                 FiltrarPresente(Mensaje, Salvar)
                 FiltrarPreguntas(Mensaje, Salvar)
                 if not (Mensaje.author.isChatModerator or Mensaje.author.isChatOwner):
                     FiltrarMods(Mensaje, Salvar)
+                if not esColor:
+                    chatMQTT(Mensaje)
+                    pass
         except KeyboardInterrupt:
             logger.info("Saliendo del Chat")
             chat.terminate()
+
+
+def chatMQTT(mensaje):
+    mensaje = {"nombre": mensaje.author.name, "texto": mensaje.message, "imagen": mensaje.author.imageUrl}
+
+    mensaje = json.dumps(mensaje)
+
+    EnviarMensajeMQTT("alsw/chat/mensajes", mensaje)
 
 
 def SalvarMensajes(IdVideo, mensaje, Salvar):
@@ -51,7 +62,7 @@ def SalvarMensajes(IdVideo, mensaje, Salvar):
 
 def FiltrarColor(Mensaje, Salvar):
     if not FiltranChat(Mensaje.message, "color"):
-        return
+        return False
 
     Comando = FiltrarChatComando(Mensaje.message, ComandosColor)
     if Comando is None:
@@ -59,13 +70,15 @@ def FiltrarColor(Mensaje, Salvar):
 
     Color = BuscarColor(Mensaje.message)
     if Color is None:
-        return
+        return False
 
     if Salvar:
         SalvarComando(f"{Mensaje.IdVideo}_Color.csv", Mensaje.datetime, Mensaje.author.name, Comando, Color)
 
     logger.info(f"Comando [{Comando}]{Color} por {Mensaje.author.name}")
     EnviarMensajeMQTT(f"/fondo/color/{Comando}", Color)
+
+    return True
 
 
 def FiltrarPresente(Mensaje, salvar):
