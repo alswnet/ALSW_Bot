@@ -1,0 +1,6 @@
+#Base
+PyYAML
+python-telegram-bot
+paho-mqtt
+#paquetes
+pytchat
