@@ -3,4 +3,5 @@ PyYAML
 python-telegram-bot
 paho-mqtt
 #paquetes
-pytchat
+# pytchat
+chat_downloader

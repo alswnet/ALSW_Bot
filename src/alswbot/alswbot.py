@@ -1,8 +1,8 @@
 import argparse
 
 import MiLibrerias
+from bot.monitorChat import monitorChat
 from bot.twitchbot import twithbot
-from bot.youtubebot import ChatYoutube
 
 logger = MiLibrerias.ConfigurarLogging(__name__)
 
@@ -19,13 +19,14 @@ def ArgumentosCLI():
 def main():
     logger.info("Iniciando el bot")
     args = ArgumentosCLI()
-    salvar = True
+    salvarChar = True
     if args.noSalvar is None or args.noSalvar:
         salvar = False
 
     if args.youtube:
-        print(f"valor de youtube {args.youtube}")
-        ChatYoutube(args.youtube, salvar)
+        Youtube = monitorChat(args.youtube)
+        Youtube.salvarChat = salvarChar
+        Youtube.empezar()
     if args.twitch:
         bot = twithbot()
         bot.conectar()
