@@ -18,6 +18,7 @@ Mensaje = namedtuple(
 
 COMANDOS_BASAS = {
     '!discord': 'Unete {mensaje.user} a nuestro discord https://nocheprogramacion.com/discord',
+    '!bot': 'Para usar el bot {mensaje.user}, puede entrar aqui: https://nocheprogramacion.com/bot',
     '!youtube': 'Subcribete a Canal de Youtube https://youtube.com/alswnet?sub_confirmation=1, {mensaje.user}'
 }
 
@@ -192,8 +193,8 @@ class twithbot:
             logger.info("> Ping")
             self.enviar_commando('PONG :tmi.twitch.tv')
         elif mensaje.irc_command == 'PRIVMSG':
-            logger.info("> PRIVMSG")
             if mensaje.text_command in COMANDOS_BASAS:
+                logger.info(f"> PRIVMSG {mensaje.text_command}")
                 self.manejar_comandos_base(
                     mensaje,
                     mensaje.text_command,
