@@ -26,18 +26,19 @@ class monitorChat:
         self.chat = ChatDownloader().get_chat(self.url, message_groups=self.grupos)
 
         for mensaje in self.chat:
-            # chat.print_formatted(mensaje)
+            self.chat.print_formatted(mensaje)
             if "author" in mensaje:
                 autor = mensaje["author"]
 
                 if mensaje["message_type"] == "text_message":
                     self.filtrasMensajes(mensaje)
-                # elif mensaje["message_type"] == "paid_message":
-                #     print(f"Super Chat")
-                # elif mensaje["message_type"] == "paid_sticker":
-                #     print(f"Super strikers")
-                # elif mensaje["message_type"] == "membership_item":
-                #     print(f"Nuevo miembro")
+                elif mensaje["message_type"] == "paid_message":
+                    self.filtroDonacion("Super Chat", mensaje)
+                    self.filtrasMensajes(mensaje)
+                elif mensaje["message_type"] == "paid_sticker":
+                    self.filtroDonacion("Super strikers", mensaje)
+                elif mensaje["message_type"] == "membership_item":
+                    self.filtroDonacion("Nuevo Miembro", mensaje)
                 else:
                     print(f"Nombre: {mensaje['author']['name']} Tipo: {mensaje['message_type']}")
 
@@ -47,8 +48,9 @@ class monitorChat:
             return
 
         esColor = self.filtrarColor(mensaje)
+        esMiembro = self.filtrarPresente(mensaje)
 
-        if not esColor:
+        if not esColor and not esMiembro:
             self.chatMQTT(mensaje)
             # self.chat.print_formatted(mensaje)
 
@@ -131,6 +133,62 @@ class monitorChat:
         self.mensajeMQTT("alsw/chat/comando", mensaje)
 
         return True
+
+    def filtrarPresente(self, mensaje):
+        if not self.filtranChat(mensaje["message"], "!presente"):
+            return False
+
+        nombre = mensaje["author"]["name"]
+        canal = mensaje["author"]["id"]
+        imagen = mensaje["author"]["images"][0]["url"]
+        miembro = self.esMiembro(mensaje)
+
+        if self.salvarChat:
+            FuncionesArchivos.SalvarValor(f"{self.chatID }_Presente.json", canal, nombre, False)
+
+        mensaje = {
+            "nombre": nombre,
+            "texto": "Presente",
+            "imagen": imagen,
+            "miembro": miembro,
+        }
+
+        mensaje = json.dumps(mensaje)
+
+        self.mensajeMQTT("alsw/chat/comando", mensaje)
+
+        return True
+
+    def filtroDonacion(self, tipo, mensaje):
+        print(f"Mensaje {tipo}")
+
+        monto = None
+        nombre = mensaje["author"]["name"]
+        if "money" in mensaje:
+            monto = mensaje["money"]["text"]
+            print(f"Monto {monto}")
+
+        if self.salvarChat:
+            data = {
+                "tiempo": mensaje["time_text"],
+                "tipo": tipo,
+                "nombre": nombre,
+                "monto": monto,
+            }
+            salvarCSV(self.chatID + "_Donacion.csv", data)
+
+        mienbro = self.esMiembro(mensaje)
+
+        mensaje = {
+            "nombre": nombre,
+            "texto": f"{tipo} {monto}",
+            "imagen": mensaje["author"]["images"][0]["url"],
+            "miembro": mienbro,
+        }
+
+        mensaje = json.dumps(mensaje)
+
+        self.mensajeMQTT("alsw/chat/donar", mensaje)
 
     def chatMQTT(self, mensaje):
 
