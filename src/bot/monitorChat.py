@@ -4,6 +4,7 @@ import re
 
 from chat_downloader import ChatDownloader
 from MiLibrerias import ConfigurarLogging, EnviarMensajeMQTT, FuncionesArchivos, SalvarValor
+from MiLibrerias.FuncionesMQTT import EnviarMensajeMQTT
 
 from .funcionesbot import salvarCSV
 
@@ -15,8 +16,10 @@ class monitorChat:
         self.salvarChat = False
         self.chatID = chatID
         self.listaColores = FuncionesArchivos.ObtenerArchivo("data/color.json")
+        self.listaAlgoritmo = FuncionesArchivos.ObtenerArchivo("data/algoritmo.json")
         self.exprecionColores = "\#[a-fA-f0-9][a-fA-f0-9][a-fA-f0-9][a-fA-f0-9][a-fA-f0-9][a-fA-f0-9]"
         self.comandoColor = ["base", "linea", "fondo"]
+        self.duennoMiembro = False
 
     def empezar(self):
         self.url = f"https://www.youtube.com/watch?v={self.chatID}"
@@ -29,6 +32,9 @@ class monitorChat:
             self.chat.print_formatted(mensaje)
             if "author" in mensaje:
                 autor = mensaje["author"]
+
+                if not "time_text" is mensaje:
+                    mensaje["time_text"] = None
 
                 if mensaje["message_type"] == "text_message":
                     self.filtrasMensajes(mensaje)
@@ -49,10 +55,10 @@ class monitorChat:
 
         esColor = self.filtrarColor(mensaje)
         esMiembro = self.filtrarPresente(mensaje)
+        self.filtrarMiembros(mensaje)
 
         if not esColor and not esMiembro:
             self.chatMQTT(mensaje)
-            # self.chat.print_formatted(mensaje)
 
         data = {
             "tiempo": mensaje["time_text"],
@@ -117,7 +123,7 @@ class monitorChat:
             salvarCSV(self.chatID + "_Color.csv", data)
 
         logger.info(f"Comando [{comando}]{color} por {nombre}")
-        self.mensajeMQTT(f"/fondo/color/{comando}", color)
+        self.mensajeMqttTablero(f"/fondo/color/{comando}", color)
 
         mienbro = self.esMiembro(mensaje)
 
@@ -130,7 +136,7 @@ class monitorChat:
 
         mensaje = json.dumps(mensaje)
 
-        self.mensajeMQTT("alsw/chat/comando", mensaje)
+        self.mensajeMqttTablero("alsw/chat/comando", mensaje)
 
         return True
 
@@ -155,9 +161,35 @@ class monitorChat:
 
         mensaje = json.dumps(mensaje)
 
-        self.mensajeMQTT("alsw/chat/comando", mensaje)
+        self.mensajeMqttTablero("alsw/chat/comando", mensaje)
 
         return True
+
+    def filtrarMiembros(self, mensaje):
+        miembro = self.esMiembro(mensaje)
+        if miembro:
+            self.filtrarAltoritmo(mensaje)
+
+    def filtrarAltoritmo(self, mensaje):
+        texto = mensaje["message"]
+        if not self.filtranChat(texto, "!algoritmo"):
+            return False
+
+        comando = self.filtrarChatComando(texto, self.listaAlgoritmo)
+        if comando is None:
+            comando = self.listaAlgoritmo[0]
+
+        if self.salvarChat:
+            data = {
+                "tiempo": mensaje["time_text"],
+                "nombre": mensaje["author"]["name"],
+                "comando": "algoritmo",
+                "opcion": comando,
+            }
+            salvarCSV(self.chatID + "_Comando.csv", data)
+
+        self.mensajeMqttFondo("fondo/animacion", comando)
+        return False
 
     def filtroDonacion(self, tipo, mensaje):
         print(f"Mensaje {tipo}")
@@ -188,7 +220,7 @@ class monitorChat:
 
         mensaje = json.dumps(mensaje)
 
-        self.mensajeMQTT("alsw/chat/donar", mensaje)
+        self.mensajeMqttTablero("alsw/chat/donar", mensaje)
 
     def chatMQTT(self, mensaje):
 
@@ -203,7 +235,7 @@ class monitorChat:
 
         mensaje = json.dumps(mensaje)
 
-        self.mensajeMQTT("alsw/chat/mensajes", mensaje)
+        self.mensajeMqttTablero("alsw/chat/mensajes", mensaje)
 
     def esMiembro(self, mensaje):
         mienbro = False
@@ -211,8 +243,17 @@ class monitorChat:
             for badges in mensaje["author"]["badges"]:
                 if "Member" in badges["title"]:
                     mienbro = True
+                if self.duennoMiembro:
+                    if "Owner" in badges["title"]:
+                        mienbro = True
         return mienbro
 
-    def mensajeMQTT(self, topic, mensaje):
+    def mensajeMqttTablero(self, topic, mensaje):
         procesoMQTT = multiprocessing.Process(target=EnviarMensajeMQTT, args=(topic, mensaje))
+        procesoMQTT.start()
+
+    def mensajeMqttFondo(self, topic, mensaje):
+        procesoMQTT = multiprocessing.Process(
+            target=EnviarMensajeMQTT, args=(topic, mensaje, "public", "public", "public.cloud.shiftr.io")
+        )
         procesoMQTT.start()

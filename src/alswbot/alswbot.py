@@ -26,6 +26,7 @@ def main():
     if args.youtube:
         Youtube = monitorChat(args.youtube)
         Youtube.salvarChat = salvarChar
+        # Youtube.duennoMiembro = True
         Youtube.empezar()
     if args.twitch:
         bot = twithbot()
