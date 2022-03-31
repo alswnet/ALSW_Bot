@@ -123,7 +123,7 @@ class monitorChat:
             salvarCSV(self.chatID + "_Color.csv", data)
 
         logger.info(f"Comando [{comando}]{color} por {nombre}")
-        self.mensajeMqttTablero(f"/fondo/color/{comando}", color)
+        self.mensajeMqttTablero(f"fondo/color/{comando}", color)
 
         mienbro = self.esMiembro(mensaje)
 
@@ -163,6 +163,16 @@ class monitorChat:
 
         self.mensajeMqttTablero("alsw/chat/comando", mensaje)
 
+        mensaje = {
+            "nombre": nombre,
+            "id_youtube": canal,
+            "imagen": imagen,
+            "miembro": miembro,
+        }
+
+        mensaje = json.dumps(mensaje)
+        self.mensajeMqttTablero("alsw/notificacion/presente", mensaje)
+
         return True
 
     def filtrarMiembros(self, mensaje):
@@ -188,7 +198,7 @@ class monitorChat:
             }
             salvarCSV(self.chatID + "_Comando.csv", data)
 
-        self.mensajeMqttFondo("fondo/animacion", comando)
+        self.mensajeMqttTablero("fondo/animacion", comando)
         return False
 
     def filtroDonacion(self, tipo, mensaje):
@@ -250,10 +260,4 @@ class monitorChat:
 
     def mensajeMqttTablero(self, topic, mensaje):
         procesoMQTT = multiprocessing.Process(target=EnviarMensajeMQTT, args=(topic, mensaje))
-        procesoMQTT.start()
-
-    def mensajeMqttFondo(self, topic, mensaje):
-        procesoMQTT = multiprocessing.Process(
-            target=EnviarMensajeMQTT, args=(topic, mensaje, "public", "public", "public.cloud.shiftr.io")
-        )
         procesoMQTT.start()
