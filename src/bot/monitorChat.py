@@ -3,7 +3,7 @@ import multiprocessing
 import re
 
 from chat_downloader import ChatDownloader
-from MiLibrerias import ConfigurarLogging, EnviarMensajeMQTT, FuncionesArchivos, SalvarValor
+from MiLibrerias import ConfigurarLogging, FuncionesArchivos, SalvarValor
 from MiLibrerias.FuncionesMQTT import EnviarMensajeMQTT
 
 from .funcionesbot import salvarCSV
@@ -33,7 +33,7 @@ class monitorChat:
             if "author" in mensaje:
                 autor = mensaje["author"]
 
-                if not "time_text" is mensaje:
+                if not "time_text" in mensaje:
                     mensaje["time_text"] = None
 
                 if mensaje["message_type"] == "text_message":
@@ -54,10 +54,10 @@ class monitorChat:
             return
 
         esColor = self.filtrarColor(mensaje)
-        esMiembro = self.filtrarPresente(mensaje)
+        esPresente = self.filtrarPresente(mensaje)
         self.filtrarMiembros(mensaje)
 
-        if not esColor and not esMiembro:
+        if not esColor and not esPresente:
             self.chatMQTT(mensaje)
 
         data = {
@@ -248,16 +248,20 @@ class monitorChat:
         self.mensajeMqttTablero("alsw/chat/mensajes", mensaje)
 
     def esMiembro(self, mensaje):
-        mienbro = False
         if "badges" in mensaje["author"]:
             for badges in mensaje["author"]["badges"]:
-                if "Member" in badges["title"]:
-                    mienbro = True
+                titulo = badges["title"].lower()
+
+                if "member" in titulo:
+                    return True
+
                 if self.duennoMiembro:
-                    if "Owner" in badges["title"]:
-                        mienbro = True
-        return mienbro
+                    if "owner" in titulo or "moderator" in titulo:
+                        return True
+        return False
 
     def mensajeMqttTablero(self, topic, mensaje):
-        procesoMQTT = multiprocessing.Process(target=EnviarMensajeMQTT, args=(topic, mensaje))
+        procesoMQTT = multiprocessing.Process(
+            target=EnviarMensajeMQTT, args=(topic, mensaje, None, None, None, None, False)
+        )
         procesoMQTT.start()
