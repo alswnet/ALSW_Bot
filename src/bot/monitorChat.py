@@ -123,7 +123,7 @@ class monitorChat:
             salvarCSV(self.chatID + "_Color.csv", data)
 
         logger.info(f"Comando [{comando}]{color} por {nombre}")
-        self.mensajeMqttTablero(f"fondo/color/{comando}", color)
+        self.mensajeMqttTablero(f"alsw/fondoOBS/color/{comando}", color)
 
         mienbro = self.esMiembro(mensaje)
 
@@ -198,7 +198,7 @@ class monitorChat:
             }
             salvarCSV(self.chatID + "_Comando.csv", data)
 
-        self.mensajeMqttTablero("fondo/animacion", comando)
+        self.mensajeMqttTablero("alsw/fondoOBS/animacion", comando)
         return False
 
     def filtroDonacion(self, tipo, mensaje):
