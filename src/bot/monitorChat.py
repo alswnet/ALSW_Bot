@@ -19,6 +19,12 @@ class monitorChat:
         self.listaAlgoritmo = FuncionesArchivos.ObtenerArchivo("data/algoritmo.json")
         self.exprecionColores = "\#[a-fA-f0-9][a-fA-f0-9][a-fA-f0-9][a-fA-f0-9][a-fA-f0-9][a-fA-f0-9]"
         self.comandoColor = ["base", "linea", "fondo"]
+        self.comandoTroll = {
+            "arriba": "up",
+            "abajo": "down",
+            "derecha": "left",
+            "izquierda": "right",
+        }
         self.duennoMiembro = False
 
     def empezar(self):
@@ -92,6 +98,20 @@ class monitorChat:
             return valor[0]
         return None
 
+    def filtroTroll(self, mensaje):
+        texto = mensaje["message"]
+
+        for troll in self.comandoTroll.keys():
+            if "!" + troll in texto:
+                print(f"Troleo de {mensaje['author']['name']} - {troll}")
+                data = {
+                    "nombre": f"Troleo de {mensaje['author']['name']} - {troll}",
+                    "accion": "teclas",
+                    "opciones": {"teclas": [self.comandoTroll[troll]]},
+                }
+                self.mensajeMqttTablero(f"alsw/evento/ryuk", json.dumps(data))
+                return
+
     def buscarColor(self, mensaje):
         Color = self.filtrarChatComando(mensaje, self.listaColores)
         if Color is None:
@@ -125,13 +145,13 @@ class monitorChat:
         logger.info(f"Comando [{comando}]{color} por {nombre}")
         self.mensajeMqttTablero(f"alsw/fondoOBS/color/{comando}", color)
 
-        mienbro = self.esMiembro(mensaje)
+        miembro = self.esMiembro(mensaje)
 
         mensaje = {
             "nombre": nombre,
             "texto": f"color/{comando}-{color}",
             "imagen": mensaje["author"]["images"][0]["url"],
-            "miembro": mienbro,
+            "miembro": miembro,
         }
 
         mensaje = json.dumps(mensaje)
@@ -179,6 +199,7 @@ class monitorChat:
         miembro = self.esMiembro(mensaje)
         if miembro:
             self.filtrarAltoritmo(mensaje)
+        self.filtroTroll(mensaje)
 
     def filtrarAltoritmo(self, mensaje):
         texto = mensaje["message"]
@@ -234,13 +255,13 @@ class monitorChat:
 
     def chatMQTT(self, mensaje):
 
-        mienbro = self.esMiembro(mensaje)
+        miembro = self.esMiembro(mensaje)
 
         mensaje = {
             "nombre": mensaje["author"]["name"],
             "texto": mensaje["message"],
             "imagen": mensaje["author"]["images"][0]["url"],
-            "miembro": mienbro,
+            "miembro": miembro,
         }
 
         mensaje = json.dumps(mensaje)
