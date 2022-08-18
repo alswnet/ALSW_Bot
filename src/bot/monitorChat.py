@@ -110,6 +110,7 @@ class monitorChat:
                     "opciones": {"teclas": [self.comandoTroll[troll]]},
                 }
                 self.mensajeMqttTablero(f"alsw/evento/ryuk", json.dumps(data))
+                salvarCSV(self.chatID + "_Troll.csv", data)
                 return
 
     def buscarColor(self, mensaje):
@@ -130,13 +131,6 @@ class monitorChat:
 
         if comando is None:
             return False
-
-        # if not self.filtranChat(texto, "!color"):
-        #     return False
-
-        # comando = self.filtrarChatComando(texto, self.comandoColor)
-        # if comando is None:
-        #     comando = self.comandoColor[0]
 
         color = self.buscarColor(texto)
         if color is None:
