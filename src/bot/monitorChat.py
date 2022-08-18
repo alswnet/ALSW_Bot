@@ -99,7 +99,7 @@ class monitorChat:
         return None
 
     def filtroTroll(self, mensaje):
-        texto = mensaje["message"]
+        texto = mensaje["message"].lower()
 
         for troll in self.comandoTroll.keys():
             if "!" + troll in texto:
@@ -119,13 +119,24 @@ class monitorChat:
         return Color
 
     def filtrarColor(self, mensaje):
-        texto = mensaje["message"]
-        if not self.filtranChat(texto, "!color"):
+        texto = mensaje["message"].lower()
+
+        comando = None
+        for comandoActual in self.comandoColor:
+            if "!" + comandoActual in texto:
+                comando = comandoActual
+        if "!color" in texto:
+            comando = self.comandoColor[0]
+
+        if comando is None:
             return False
 
-        comando = self.filtrarChatComando(texto, self.comandoColor)
-        if comando is None:
-            comando = self.comandoColor[0]
+        # if not self.filtranChat(texto, "!color"):
+        #     return False
+
+        # comando = self.filtrarChatComando(texto, self.comandoColor)
+        # if comando is None:
+        #     comando = self.comandoColor[0]
 
         color = self.buscarColor(texto)
         if color is None:
