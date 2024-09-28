@@ -1,6 +1,6 @@
 import argparse
 
-import MiLibrerias
+import alswbot.MiLibrerias as MiLibrerias
 from bot.monitorChat import monitorChat
 from bot.twitchbot import twithbot
 

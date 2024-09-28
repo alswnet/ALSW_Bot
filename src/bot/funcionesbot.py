@@ -1,6 +1,6 @@
 import csv
 
-from MiLibrerias import ConfigurarLogging, SalvarArchivo, SalvarValor
+from alswbot.MiLibrerias import ConfigurarLogging, SalvarArchivo, SalvarValor
 
 logger = ConfigurarLogging(__name__)
 

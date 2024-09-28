@@ -2,7 +2,7 @@ import re
 import socket
 from collections import namedtuple
 
-from MiLibrerias import ConfigurarLogging, EnviarMensajeMQTT, ObtenerValor
+from alswbot.MiLibrerias import ConfigurarLogging, EnviarMensajeMQTT, ObtenerValor
 
 logger = ConfigurarLogging(__name__)
 

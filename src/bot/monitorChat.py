@@ -4,8 +4,8 @@ import re
 
 from chat_downloader import ChatDownloader
 
-from MiLibrerias import ConfigurarLogging, FuncionesArchivos, SalvarValor
-from MiLibrerias.FuncionesMQTT import EnviarMensajeMQTT
+from alswbot.MiLibrerias import ConfigurarLogging, FuncionesArchivos, SalvarValor
+from alswbot.MiLibrerias.FuncionesMQTT import EnviarMensajeMQTT
 
 from .funcionesbot import salvarCSV
 
