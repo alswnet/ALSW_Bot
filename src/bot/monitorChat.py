@@ -3,6 +3,7 @@ import multiprocessing
 import re
 
 from chat_downloader import ChatDownloader
+
 from MiLibrerias import ConfigurarLogging, FuncionesArchivos, SalvarValor
 from MiLibrerias.FuncionesMQTT import EnviarMensajeMQTT
 
@@ -245,13 +246,13 @@ class monitorChat:
             }
             salvarCSV(self.chatID + "_Donacion.csv", data)
 
-        mienbro = self.esMiembro(mensaje)
+        miembro = self.esMiembro(mensaje)
 
         mensaje = {
             "nombre": nombre,
             "texto": f"{tipo} {monto}",
             "imagen": mensaje["author"]["images"][0]["url"],
-            "miembro": mienbro,
+            "miembro": miembro,
         }
 
         mensaje = json.dumps(mensaje)
@@ -274,6 +275,10 @@ class monitorChat:
         self.mensajeMqttTablero("alsw/chat/mensajes", mensaje)
 
     def esMiembro(self, mensaje):
+        """
+        El Mensaje es de miembro del canal
+        """
+
         if "badges" in mensaje["author"]:
             for badges in mensaje["author"]["badges"]:
                 titulo = badges["title"].lower()
@@ -287,7 +292,5 @@ class monitorChat:
         return False
 
     def mensajeMqttTablero(self, topic, mensaje):
-        procesoMQTT = multiprocessing.Process(
-            target=EnviarMensajeMQTT, args=(topic, mensaje, None, None, None, None, False)
-        )
+        procesoMQTT = multiprocessing.Process(target=EnviarMensajeMQTT, args=(topic, mensaje, None, None, None, None))
         procesoMQTT.start()
