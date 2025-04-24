@@ -1,5 +1,9 @@
 import csv
+import json
+import multiprocessing
 from alswbot.superBot.mensajeBot import mensajeBot
+from alswbot.MiLibrerias.FuncionesMQTT import EnviarMensajeMQTT
+
 
 class botBase:
 
@@ -26,6 +30,8 @@ class botBase:
         
         if self.salvarChat:
             self.salvarMensaje(mensaje)
+            
+        self.chatMQTT(mensaje)
         
     def salvarMensaje(self, mensaje: mensajeBot) -> None:
         """
@@ -50,3 +56,23 @@ class botBase:
                 escribir.writeheader()
             
             escribir.writerow(mensaje_dict)
+            
+    def chatMQTT(self, mensaje: mensajeBot):
+
+        mensajeJson = {
+            "nombre": mensaje.nombre,
+            "texto": mensaje.texto,
+            "imagen": mensaje.imagen,
+            "canal": mensaje.canal,
+            "miembro": mensaje.miembro,
+        }
+
+        mensajeMQTT = json.dumps(mensajeJson)
+
+        self.mensajeMqttTablero("alsw/chat/mensajes", mensajeMQTT)
+            
+            
+    def mensajeMqttTablero(self, topic, mensaje):
+        procesoMQTT = multiprocessing.Process(
+            target=EnviarMensajeMQTT, args=(topic, mensaje))
+        procesoMQTT.start()

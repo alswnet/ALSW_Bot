@@ -5,6 +5,8 @@ class mensajeBot:
     texto: str = None
     imagen: str = None
     canal: str = None
+    miembro: bool = False
+    # Apoya en canal con una contribución monetaria
     
     def __str__(self):
         return (
