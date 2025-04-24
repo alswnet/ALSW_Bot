@@ -3,6 +3,7 @@ from TikTokLive import TikTokLiveClient
 from TikTokLive.events import ConnectEvent, CommentEvent, ConnectEvent, LikeEvent
 
 from alswbot.superBot.botBase import botBase
+from alswbot.superBot.mensajeBot import mensajeBot
 
 
 class BotTiktok(botBase):
@@ -12,7 +13,7 @@ class BotTiktok(botBase):
 
     def empezar(self):
         
-        # self.chatID = "yaboysavage_"
+        self.chatID = "castordie"
         self.url: str = f"https://www.tiktok.com/@{self.chatID}/live"
 
         print(f"Empezando Monitor de Chat - {self.url}")
@@ -32,14 +33,21 @@ class BotTiktok(botBase):
         
         urlImagen: str = event.user_info.avatar_thumb.m_urls[0]
 
+        mensaje = mensajeBot()
         
-        mensaje = {
-            "nombre": event.user.nickname,
-            "id": event.user.id,
-            "texto": event.comment,
-            "imagen": urlImagen,
-            "canal": "tiktok"
-        }
+        mensaje.nombre = event.user.nickname
+        mensaje.id = event.user.id
+        mensaje.texto = event.comment
+        mensaje.imagen = urlImagen
+        mensaje.canal = "tiktok"
+        
+        # mensaje = {
+        #     "nombre": event.user.nickname,
+        #     "id": event.user.id,
+        #     "texto": event.comment,
+        #     "imagen": urlImagen,
+        #     "canal": "tiktok"
+        # }
 
         self.procesarMensaje(mensaje)
         

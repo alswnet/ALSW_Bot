@@ -1,5 +1,6 @@
 from chat_downloader import ChatDownloader
 from alswbot.superBot.botBase import botBase
+from alswbot.superBot.mensajeBot import mensajeBot
 from datetime import datetime 
 
 class BotYoutube(botBase):
@@ -8,6 +9,8 @@ class BotYoutube(botBase):
         self.tiposMensajes: dict =  ["messages", "superchat", "tickers"]
 
     def empezar(self):
+        
+        self.chatID = "LofiGirl"
         
         self.url: str = f"https://www.youtube.com/@{self.chatID}/live"
 
@@ -19,14 +22,23 @@ class BotYoutube(botBase):
             
             if mensajeYoutube["message_type"] == "text_message":
                 
-                urlImagen = mensajeYoutube["author"]["images"][0]["url"]
+                mensaje = mensajeBot()
+                
+                mensaje.nombre = mensajeYoutube["author"]["name"]
+                mensaje.id = mensajeYoutube["author"]["id"]
+                mensaje.texto = mensajeYoutube.get("message")
+                mensaje.imagen = mensajeYoutube["author"]["images"][0]["url"]
+                mensaje.canal = "youtube"
+                
+                # urlImagen = mensajeYoutube["author"]["images"][0]["url"]
+                
             
-                mensaje = {
-                    "nombre": mensajeYoutube["author"]["name"],
-                    "imagen": urlImagen,
-                    "id": mensajeYoutube["author"]["id"],
-                    "texto": mensajeYoutube.get("message"),
-                    "canal": "youtube"
-                }
+                # mensaje = {
+                #     "nombre": mensajeYoutube["author"]["name"],
+                #     "imagen": urlImagen,
+                #     "id": mensajeYoutube["author"]["id"],
+                #     "texto": mensajeYoutube.get("message"),
+                #     "canal": "youtube"
+                # }
 
                 self.procesarMensaje(mensaje)
