@@ -1,3 +1,5 @@
+# https://github.com/xenova/chat-downloader
+
 import json
 import multiprocessing
 import re
@@ -17,7 +19,8 @@ class monitorChat:
         self.salvarChat = False
         self.chatID = chatID
         self.listaColores = FuncionesArchivos.ObtenerArchivo("data/color.json")
-        self.listaAlgoritmo = FuncionesArchivos.ObtenerArchivo("data/algoritmo.json")
+        self.listaAlgoritmo = FuncionesArchivos.ObtenerArchivo(
+            "data/algoritmo.json")
         self.exprecionColores = "\#[a-fA-f0-9][a-fA-f0-9][a-fA-f0-9][a-fA-f0-9][a-fA-f0-9][a-fA-f0-9]"
         self.comandoColor = ["base", "linea", "fondo"]
         self.comandoTroll = {
@@ -26,7 +29,7 @@ class monitorChat:
             "derecha": "left",
             "izquierda": "right",
         }
-        self.duennoMiembro = False
+        self.duennoMiembro = True
 
     def empezar(self):
         self.url = f"https://www.youtube.com/watch?v={self.chatID}"
@@ -37,6 +40,7 @@ class monitorChat:
 
         for mensaje in self.chat:
             self.chat.print_formatted(mensaje)
+            print(mensaje["author"])
             if "author" in mensaje:
                 autor = mensaje["author"]
 
@@ -53,7 +57,8 @@ class monitorChat:
                 elif mensaje["message_type"] == "membership_item":
                     self.filtroDonacion("Nuevo Miembro", mensaje)
                 else:
-                    print(f"Nombre: {mensaje['author']['name']} Tipo: {mensaje['message_type']}")
+                    print(
+                        f"Nombre: {mensaje['author']['name']} Tipo: {mensaje['message_type']}")
 
     def filtrasMensajes(self, mensaje):
 
@@ -176,7 +181,8 @@ class monitorChat:
         miembro = self.esMiembro(mensaje)
 
         if self.salvarChat:
-            FuncionesArchivos.SalvarValor(f"{self.chatID }_Presente.json", canal, nombre, False)
+            FuncionesArchivos.SalvarValor(
+                f"{self.chatID }_Presente.json", canal, nombre, False)
 
         mensaje = {
             "nombre": nombre,
@@ -205,6 +211,7 @@ class monitorChat:
         miembro = self.esMiembro(mensaje)
         if miembro:
             self.filtrarAltoritmo(mensaje)
+            self.filtrarApagar(mensaje)
         self.filtroTroll(mensaje)
 
     def filtrarAltoritmo(self, mensaje):
@@ -226,6 +233,17 @@ class monitorChat:
             salvarCSV(self.chatID + "_Comando.csv", data)
 
         self.mensajeMqttTablero("alsw/fondoOBS/animacion", comando)
+        return False
+
+    def filtrarApagar(self, mensaje: dict[str, any]) -> bool:
+        
+        texto : str = mensaje["message"].lower()
+        
+        if "!apagar" in texto:
+            print("Apagar estudio")
+            EnviarMensajeMQTT("alsw/estudio/estado/t", "c")
+            return True
+        
         return False
 
     def filtroDonacion(self, tipo, mensaje):
@@ -292,5 +310,6 @@ class monitorChat:
         return False
 
     def mensajeMqttTablero(self, topic, mensaje):
-        procesoMQTT = multiprocessing.Process(target=EnviarMensajeMQTT, args=(topic, mensaje, None, None, None, None))
+        procesoMQTT = multiprocessing.Process(
+            target=EnviarMensajeMQTT, args=(topic, mensaje, None, None, None, None))
         procesoMQTT.start()

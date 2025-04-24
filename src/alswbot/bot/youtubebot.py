@@ -10,15 +10,29 @@ import sys
 import time
 
 import pytchat
-from MiLibrerias import ConfigurarLogging, EnviarMensajeMQTT, SalvarValor
+from alswbot.MiLibrerias import ConfigurarLogging, EnviarMensajeMQTT, SalvarValor
 
 from .funcionesbot import SalvarComando, SalvarDonaciones, SalvarMensaje
 
 logger = ConfigurarLogging(__name__)
 
-ExprecionColores = "\#[a-fA-f0-9][a-fA-f0-9][a-fA-f0-9][a-fA-f0-9][a-fA-f0-9][a-fA-f0-9]"
+ExprecionColores = (
+    "\#[a-fA-f0-9][a-fA-f0-9][a-fA-f0-9][a-fA-f0-9][a-fA-f0-9][a-fA-f0-9]"
+)
 ComandosColor = ["base", "linea", "fondo"]
-Colores = ["rojo", "azul", "verde", "blanco", "gris", "aqua", "amarillo", "naranja", "morado", "rosado"]
+ComandosPremium = ["apagar"]
+Colores = [
+    "rojo",
+    "azul",
+    "verde",
+    "blanco",
+    "gris",
+    "aqua",
+    "amarillo",
+    "naranja",
+    "morado",
+    "rosado",
+]
 
 
 def sigint_handler(signal, frame):
@@ -38,6 +52,7 @@ def ChatYoutube(IdVideo, Salvar=False):
         chat = pytchat.create(video_id=IdVideo)
         while chat.is_alive():
             for Mensaje in chat.get().sync_items():
+                print(Mensaje)
                 Mensaje.IdVideo = IdVideo
                 # Mensaje.texto = Mensaje.message.lower()
                 # Mensaje.texto = Mensaje.message
@@ -45,6 +60,14 @@ def ChatYoutube(IdVideo, Salvar=False):
 
                 if not (Mensaje.author.isChatModerator or Mensaje.author.isChatOwner):
                     FiltrarMods(Mensaje, Salvar)
+
+                if (
+                    Mensaje.author.isChatSponsor
+                    or Mensaje.type == "superChat"
+                    or Mensaje.author.isChatModerator
+                    or Mensaje.author.isChatOwner
+                ):
+                    FiltrarComandoPremium(Mensaje)
 
                 esPresente = FiltrarPresente(Mensaje, Salvar)
                 esColor = FiltrarColor(Mensaje, Salvar)
@@ -70,15 +93,15 @@ def ChatYoutube(IdVideo, Salvar=False):
 
 
 def chatMQTT(mensaje):
-    mienbro = "no"
+    miembro: str= "no"
     if mensaje.author.isChatSponsor:
-        mienbro = "si"
+        miembro = "si"
 
     mensaje = {
         "nombre": mensaje.author.name,
         "texto": mensaje.message,
         "imagen": mensaje.author.imageUrl,
-        "miembro": mienbro,
+        "miembro": miembro,
     }
 
     mensaje = json.dumps(mensaje)
@@ -90,7 +113,12 @@ def SalvarMensajes(IdVideo, mensaje, Salvar):
     if mensaje.type == "superChat":
         logger.info(f"SuperChat [{mensaje.author.name}]{mensaje.amountString}")
         if Salvar:
-            SalvarDonaciones(f"{IdVideo}_SuperChat.csv", mensaje.datetime, mensaje.author.name, mensaje.amountString)
+            SalvarDonaciones(
+                f"{IdVideo}_SuperChat.csv",
+                mensaje.datetime,
+                mensaje.author.name,
+                mensaje.amountString,
+            )
 
         mienbro = "no"
         if mensaje.author.isChatSponsor:
@@ -110,12 +138,26 @@ def SalvarMensajes(IdVideo, mensaje, Salvar):
     if mensaje.author.isChatSponsor:
         logger.info(f"Miembro >>>>{mensaje.author.name}<<<<")
         if Salvar:
-            SalvarMensaje(f"{IdVideo}_Miembros.csv", mensaje.datetime, mensaje.author.name, mensaje.message)
+            SalvarMensaje(
+                f"{IdVideo}_Miembros.csv",
+                mensaje.datetime,
+                mensaje.author.name,
+                mensaje.message,
+            )
     else:
         if Salvar:
-            SalvarMensaje(f"{IdVideo}_YT.csv", mensaje.datetime, mensaje.author.name, mensaje.message)
+            SalvarMensaje(
+                f"{IdVideo}_YT.csv",
+                mensaje.datetime,
+                mensaje.author.name,
+                mensaje.message,
+            )
 
-    logger.info(f"{mensaje.datetime} - [{mensaje.type}] [{mensaje.author.name}]- {mensaje.message}")
+    logger.info(
+        f"{mensaje.datetime} - [{mensaje.type}] [{mensaje.author.name}]- {mensaje.message}"
+    )
+
+    print(mensaje)
 
 
 def FiltrarColor(mensaje, Salvar):
@@ -131,7 +173,13 @@ def FiltrarColor(mensaje, Salvar):
         return False
 
     if Salvar:
-        SalvarComando(f"{mensaje.IdVideo}_Color.csv", mensaje.datetime, mensaje.author.name, Comando, Color)
+        SalvarComando(
+            f"{mensaje.IdVideo}_Color.csv",
+            mensaje.datetime,
+            mensaje.author.name,
+            Comando,
+            Color,
+        )
 
     logger.info(f"Comando [{Comando}]{Color} por {mensaje.author.name}")
     EnviarMensajeMQTT(f"/fondo/color/{Comando}", Color)
@@ -163,7 +211,9 @@ def FiltrarPresente(mensaje, salvar):
     miembro = mensaje.author.isChatSponsor
 
     if miembro:
-        logger.info(f"Presente Patrocinador {nombre} - https://www.youtube.com/channel/{canal}")
+        logger.info(
+            f"Presente Patrocinador {nombre} - https://www.youtube.com/channel/{canal}"
+        )
     else:
         logger.info(f"Presente {nombre} - https://www.youtube.com/channel/{canal}")
 
@@ -193,7 +243,11 @@ def FiltrarPreguntas(Mensaje, Salvar):
         logger.info(f"Pregunta de {Mensaje.author.name} {Mensaje.message}")
         if Salvar:
             SalvarComando(
-                f"{Mensaje.IdVideo}_Pregunta.csv", Mensaje.datetime, Mensaje.author.name, "Pregunta", Mensaje.message
+                f"{Mensaje.IdVideo}_Pregunta.csv",
+                Mensaje.datetime,
+                Mensaje.author.name,
+                "Pregunta",
+                Mensaje.message,
             )
 
 
@@ -208,7 +262,9 @@ def FiltrarMods(Mensaje, Salvar):
                 {
                     "nombre": "Sonido",
                     "accion": "textovoz",
-                    "opciones": {"mensaje": f"{Mensaje.author.name} pregunta, si estan grabando, Gracias"},
+                    "opciones": {
+                        "mensaje": f"{Mensaje.author.name} pregunta, si estan grabando, Gracias"
+                    },
                 },
             ],
         }
@@ -249,3 +305,22 @@ def FiltrarExprecion(Mensaje, Expresion):
     if valor:
         return valor[0]
     return None
+
+
+def FiltrarComandoPremium(Mensaje):
+
+    if FiltranChat(Mensaje.message, "apagar"):
+
+        print(f"Comando apagar estudio {mensaje.author.name}")
+
+        EnviarMensajeMQTT("alsw/estudio/estado/t", "c")
+
+        mensaje = {
+            "nombre": mensaje.author.name,
+            "texto": "apagar",
+            "imagen": mensaje.author.imageUrl,
+        }
+
+        mensaje = json.dumps(mensaje)
+
+        EnviarMensajeMQTT("alsw/chat/comando", mensaje)
