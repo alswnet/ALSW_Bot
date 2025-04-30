@@ -1,4 +1,5 @@
 # https://github.com/isaackogan/TikTokLive
+import multiprocessing
 from TikTokLive import TikTokLiveClient
 from TikTokLive.events import ConnectEvent, CommentEvent, ConnectEvent, LikeEvent
 
@@ -17,6 +18,14 @@ class BotTiktok(botBase):
 
         print(f"Empezando Monitor de Chat - {self.url}")
         super().empezar()
+        
+        procesoBot = multiprocessing.Process(target=self.empezarBot)
+        procesoBot.start()
+        
+    def empezarBot(self):
+        """
+        Iniciar el bot
+        """
         
         self.chat: TikTokLiveClient = TikTokLiveClient(unique_id=self.chatID)
         

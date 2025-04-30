@@ -1,5 +1,7 @@
 # https://chat-downloader.readthedocs.io/en/latest/index.html
 
+import multiprocessing
+
 from chat_downloader import ChatDownloader
 from alswbot.superBot.botBase import botBase
 from alswbot.superBot.mensajeBot import mensajeBot
@@ -15,6 +17,14 @@ class BotYoutube(botBase):
         self.url: str = f"https://www.youtube.com/@{self.chatID}/live"
 
         print(f"Empezando Monitor de Chat - {self.url}")
+        
+        procesoBot = multiprocessing.Process(target=self.empezarBot)
+        procesoBot.start()
+
+    def empezarBot(self):
+        """
+        Iniciar el bot
+        """
         
         self.chat = ChatDownloader().get_chat(self.url, message_groups=self.tiposMensajes)
         
