@@ -3,7 +3,7 @@ import json
 import multiprocessing
 from alswbot.superBot.mensajeBot import mensajeBot
 from alswbot.MiLibrerias.FuncionesMQTT import EnviarMensajeMQTT
-
+from datetime import datetime 
 
 class botBase:
 
@@ -32,13 +32,14 @@ class botBase:
             self.salvarMensaje(mensaje)
             
         self.chatMQTT(mensaje)
+        self.mensajePresente(mensaje)
         
     def salvarMensaje(self, mensaje: mensajeBot) -> None:
         """
         Salvar el mensaje en un archivo CSV
         """
         
-        mensaje_dict = {
+        dataMensaje = {
         "nombre": mensaje.nombre,
         "id": mensaje.id,
         "texto": mensaje.texto,
@@ -46,16 +47,27 @@ class botBase:
         "imagen": mensaje.imagen,
         }
         
-        with open(f"chat_Base.csv", "a") as MiArchivo:
+        fechaActual = datetime.now().strftime("%d-%m-%Y")
+        nombreArchivo = f"chat_base_{fechaActual}.csv"
+        
+        self.salvarCSV(dataMensaje, nombreArchivo)
+        
             
-            fieldnames = mensaje_dict.keys()
+    def salvarCSV(self, data: dict, nombreArchivo: str) -> None:
+        """
+        Salvar el mensaje en un archivo CSV
+        """
+        
+        with open(nombreArchivo, "a") as MiArchivo:
+            
+            fieldnames = data.keys()
             
             escribir = csv.DictWriter(MiArchivo, fieldnames=fieldnames)
             
             if MiArchivo.tell() == 0:
                 escribir.writeheader()
             
-            escribir.writerow(mensaje_dict)
+            escribir.writerow(data)
             
     def chatMQTT(self, mensaje: mensajeBot):
 
@@ -76,3 +88,55 @@ class botBase:
         procesoMQTT = multiprocessing.Process(
             target=EnviarMensajeMQTT, args=(topic, mensaje))
         procesoMQTT.start()
+        
+
+    def mensajePresente(self, mensaje: mensajeBot):
+        
+        if not self.filtranChat(mensaje.texto, "!presente"):
+            return
+        
+        if self.salvarChat:
+            dataMensaje = {
+                "nombre": mensaje.nombre,
+                "id": mensaje.id,
+                "canal": mensaje.canal,
+                "texto": mensaje.texto,
+                "imagen": mensaje.imagen,
+            }
+            
+            fechaActual = datetime.now().strftime("%d-%m-%Y")
+            nombreArchivo = f"presente_{fechaActual}.csv"
+            
+            self.salvarCSV(dataMensaje, nombreArchivo)
+            
+        mensajeJson = {
+            "nombre": mensaje.nombre,
+            "texto": "Presente",
+            "imagen": mensaje.imagen,
+            "miembro": mensaje.miembro,
+        }
+
+        mensajeMQTT = json.dumps(mensajeJson)
+
+        self.mensajeMqttTablero("alsw/chat/comando", mensajeMQTT)
+
+        mensajeJson = {
+            "nombre": mensaje.nombre,
+            "id_youtube": mensaje.id,
+            "imagen": mensaje.imagen,
+            "miembro": mensaje.miembro,
+        }
+
+        mensajeMQTT = json.dumps(mensajeJson)
+        
+        self.mensajeMqttTablero("alsw/notificacion/presente", mensajeMQTT)
+    
+    def filtranChat(self, textMensaje, Palabra):
+        if not textMensaje or not Palabra:
+            return False
+
+        if Palabra.lower() in textMensaje.lower():
+            return True
+
+        return False
+        

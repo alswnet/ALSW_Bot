@@ -13,7 +13,6 @@ class BotTiktok(botBase):
 
     def empezar(self):
         
-        self.chatID = "castordie"
         self.url: str = f"https://www.tiktok.com/@{self.chatID}/live"
 
         print(f"Empezando Monitor de Chat - {self.url}")
@@ -27,7 +26,7 @@ class BotTiktok(botBase):
         self.chat.run()
         
     def conectarTiktok(self, event: ConnectEvent):
-        print(f"Connected to @{event.unique_id}!")
+        print(f"Conectado a @{event.unique_id}")
         
     def comentarTiktok(self, event: CommentEvent):
         
@@ -40,14 +39,6 @@ class BotTiktok(botBase):
         mensaje.texto = event.comment
         mensaje.imagen = urlImagen
         mensaje.canal = "tiktok"
-        
-        # mensaje = {
-        #     "nombre": event.user.nickname,
-        #     "id": event.user.id,
-        #     "texto": event.comment,
-        #     "imagen": urlImagen,
-        #     "canal": "tiktok"
-        # }
 
         self.procesarMensaje(mensaje)
         

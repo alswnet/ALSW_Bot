@@ -15,6 +15,9 @@ def ArgumentosCLI():
     parser.add_argument("--youtube", "-y", type=str, help="Activar Bot Youtube")
     parser.add_argument("--youtube2", help="Activar Bot Youtube V2", action="store_true")
     parser.add_argument("--tiktok", help="Activar Bot Tiktok", action="store_true")
+    
+    parser.add_argument("--youtube_id", help="ID de depuración para Youtube", type=str)
+    parser.add_argument("--tiktok_id", help="ID de depuración para Tiktok", type=str)
 
     parser.add_argument("--noSalvar", "-no_s", help="No Salvar Chat en Archivo", action="store_true")
     return parser.parse_args()
@@ -38,11 +41,14 @@ def main():
     if args.tiktok:
         logger.info("Activando Bot Tiktok")
         botTiktok = BotTiktok()
+        if args.tiktok_id:
+            botTiktok.chatID = args.tiktok_id
         botTiktok.empezar()
     if args.youtube2:
         logger.info("Activando Bot youtube V2")
         botYoutube = BotYoutube()
-        # botYoutube.chatID = args.youtube2
+        if args.youtube_id:
+            botYoutube.chatID = args.youtube_id
         botYoutube.empezar()
 
 
