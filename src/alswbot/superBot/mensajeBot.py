@@ -1,3 +1,5 @@
+import json
+
 
 class mensajeBot:
     nombre: str = None
@@ -7,7 +9,7 @@ class mensajeBot:
     canal: str = None
     miembro: bool = False
     # Apoya en canal con una contribución monetaria
-    
+
     def __str__(self):
         return (
             f"MensajeBot(\n"
@@ -18,3 +20,19 @@ class mensajeBot:
             f"canal='{self.canal}'"
             f"\n)"
         )
+
+    def toJson(self):
+        """
+        Convertir el mensaje a un diccionario para JSON
+        """
+
+        dataConvertir = {
+            "nombre": self.nombre,
+            "id": self.id,
+            "texto": self.texto,
+            "imagen": self.imagen,
+            "canal": self.canal,
+            "miembro": self.miembro,
+        }
+
+        return json.dumps(dataConvertir)
